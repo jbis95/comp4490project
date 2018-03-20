@@ -1,1 +1,1 @@
-COMP 4490 Prooject: this is a test
+COMP 4490 Project: this is a test
