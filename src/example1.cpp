@@ -8,9 +8,10 @@
 //   as the default projetion.
 
 #include "common.h"
-
+#include <stdio.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "BBox.h"
 
 const char *WINDOW_TITLE = "CPU Color Cube";
 const double FRAME_RATE_MS = 1000.0/60.0;
@@ -18,33 +19,26 @@ const double FRAME_RATE_MS = 1000.0/60.0;
 typedef glm::vec4  color4;
 typedef glm::vec4  point4;
 
-const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
+const int NumVertices = 12; //(6 faces)(2 triangles/face)(3 vertices/triangle) 
 
 point4 points[NumVertices];
 color4 colors[NumVertices];
 
 // Vertices of a unit cube centered at origin, sides aligned with axes
-point4 vertices[8] = {
-    point4( -0.5, -0.5,  0.5, 1.0 ),
-    point4( -0.5,  0.5,  0.5, 1.0 ),
-    point4(  0.5,  0.5,  0.5, 1.0 ),
-    point4(  0.5, -0.5,  0.5, 1.0 ),
-    point4( -0.5, -0.5, -0.5, 1.0 ),
-    point4( -0.5,  0.5, -0.5, 1.0 ),
-    point4(  0.5,  0.5, -0.5, 1.0 ),
-    point4(  0.5, -0.5, -0.5, 1.0 )
+point4 vertices[4] = {
+    point4(    0, -0.5,  0.5, 1.0 ),//front 
+    point4( -0.5, -0.5, -0.5, 1.0 ),//left 
+    point4(  0.5, -0.5, -0.5, 1.0 ),//right 
+	point4(	   0,  0.5,	   0, 1.0 )//top 
 };
 
+
 // RGBA olors
-color4 vertex_colors[8] = {
+color4 vertex_colors[4] = {
     color4( 0.0, 0.0, 0.0, 1.0 ),  // black
     color4( 1.0, 0.0, 0.0, 1.0 ),  // red
     color4( 1.0, 1.0, 0.0, 1.0 ),  // yellow
-    color4( 0.0, 1.0, 0.0, 1.0 ),  // green
-    color4( 0.0, 0.0, 1.0, 1.0 ),  // blue
-    color4( 1.0, 0.0, 1.0, 1.0 ),  // magenta
-    color4( 1.0, 1.0, 1.0, 1.0 ),  // white
-    color4( 0.0, 1.0, 1.0, 1.0 )   // cyan
+    color4( 0.0, 1.0, 0.0, 1.0 )  // green
 };
 
 // Array of rotation angles (in degrees) for each coordinate axis
@@ -59,14 +53,12 @@ GLfloat  Theta[NumAxes] = { 0.0, 0.0, 0.0 };
 //    to the vertices
 int Index = 0;
 void
-quad( int a, int b, int c, int d )
+quad( int a, int b, int c )
 {
     colors[Index] = vertex_colors[a]; points[Index] = vertices[a]; Index++;
     colors[Index] = vertex_colors[b]; points[Index] = vertices[b]; Index++;
     colors[Index] = vertex_colors[c]; points[Index] = vertices[c]; Index++;
-    colors[Index] = vertex_colors[a]; points[Index] = vertices[a]; Index++;
-    colors[Index] = vertex_colors[c]; points[Index] = vertices[c]; Index++;
-    colors[Index] = vertex_colors[d]; points[Index] = vertices[d]; Index++;
+
 }
 
 //----------------------------------------------------------------------------
@@ -75,12 +67,10 @@ quad( int a, int b, int c, int d )
 void
 colorcube()
 {
-    quad( 1, 0, 3, 2 );
-    quad( 2, 3, 7, 6 );
-    quad( 3, 0, 4, 7 );
-    quad( 6, 5, 1, 2 );
-    quad( 4, 5, 6, 7 );
-    quad( 5, 4, 0, 1 );
+    quad(0, 1, 2);
+	quad(0, 2, 3);
+	quad(3, 1, 2);
+	quad(3, 0, 1);
 }
 
 //----------------------------------------------------------------------------
@@ -130,21 +120,23 @@ void
 display( void )
 {
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
     glm::mat4 transform;
     transform = glm::rotate(transform, glm::radians(Theta[Xaxis]), glm::vec3(1,0,0));
     transform = glm::rotate(transform, glm::radians(Theta[Yaxis]), glm::vec3(0,1,0));
-    transform = glm::rotate(transform, glm::radians(Theta[Zaxis]), glm::vec3(0,0,1));
+    //transform = glm::rotate(transform, glm::radians(Theta[Zaxis]), glm::vec3(0,0,1));
     point4  transformed_points[NumVertices];
 
     for ( int i = 0; i < NumVertices; ++i ) {
        transformed_points[i] = transform * points[i];
     }
+	BBox bounding = BBox(transformed_points);
+	point4* box = bounding.getPoints();
 
     glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(transformed_points),
 		     transformed_points );
 
     glDrawArrays( GL_TRIANGLES, 0, NumVertices );
+
     glutSwapBuffers();
 }
 
